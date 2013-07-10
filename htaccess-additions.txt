@@ -35,9 +35,9 @@ RewriteBase /
 # Add a trailing slash to any domain.tld/wp-admin requests
 RewriteRule ^wp-admin$ wp-admin/
 
-# Return a 403 forbidden error if domain.tld/wp-admin/ is
-# accessed directly.
-RewriteRule ^wp-admin/$ - [R=403,L]
+# Return a 404 forbidden error if domain.tld/wp-admin/ is
+# accessed directly. (403 was generating redirect loop)
+RewriteRule ^wp-admin/$ - [R=404,L]
 
 # If domain.tld/site-login/ is accessed, rewrite the request
 # to wp-login.php and add the expected `loginorigin` parameter
