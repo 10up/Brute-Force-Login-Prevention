@@ -1,0 +1,86 @@
+###########################################################
+# Brute Force Login Prevention
+# Additional Apache configuration to be added to an existing
+# site's standard htaccess configuration.
+# Works in tandem with the mu-plugin
+# included in this repository.
+#
+# 403 errors are generated for:
+#   http://domain.tld/wp-admin/
+#
+# 404 errors are generated for:
+#   http://domain.tld/wp-login.php
+#
+# Successful login attempts can be made at:
+#   http://domain.tld/site-login/
+#
+# The admin dashboard can be accessed at:
+#   http://domain.tld/wp-admin/index.php
+#
+# If you'd like to use something other than `site-login`,
+# change any instance here as well as in the mu-plugin.
+###########################################################
+
+# NOTE: about the reoccurring comment
+# "next line requires sub-directory (see note at top)"
+# If you are running WordPress inside a sub-directory
+# you'll need to add the sub-directory to all of these lines
+# e.g. "/" becomes "/sub-directory/"
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# NOTE: next line requires sub-directory (see note at top)
+RewriteBase /
+
+# Add a trailing slash to any domain.tld/wp-admin requests
+RewriteRule ^wp-admin$ wp-admin/
+
+# Return a 403 forbidden error if domain.tld/wp-admin/ is
+# accessed directly.
+RewriteRule ^wp-admin/$ - [R=403,L]
+
+# If domain.tld/site-login/ is accessed, rewrite the request
+# to wp-login.php and add the expected `loginorigin` parameter
+# so that the request will be allowed through.
+RewriteRule ^site-login/$ wp-login.php?loginorigin=site-login
+
+# If a user lands on `wp-login.php?loggedout=true`, immediately
+# redirect them to the home page to avoid confusion.
+    # NOTE: next line requires sub-directory (see note at top)
+    RewriteCond %{REQUEST_URI} ^/wp-login\.php [NC]
+    RewriteCond %{QUERY_STRING} loggedout=true [NC]
+    # for Apache version 2.4.0 or later add QSD flag to RewriteRule below to
+    # discard loggedout=true on the new request
+    # NOTE: next line requires sub-directory (see note at top)
+    RewriteRule . / [R=307,L]
+
+# Process any other `wp-login.php` requests
+    # NOTE: next line requires sub-directory (see note at top)
+    RewriteCond %{REQUEST_URI} ^/wp-login\.php
+
+    # If a user is logging out via the admin dashboard, and the action
+    # parameter is set to `logout`, continue
+    # [NC] omitted b/c WordPress
+    # does not recognize action-logout with capital letters
+    # (e.g. action=LoGOut does NOT work)
+    RewriteCond %{QUERY_STRING} !^action=logout
+
+    # If the `loginorigin` parameter is set to `site-login`, continue.
+    # [NC] omitted b/c we are setting 
+    # loginorigin ourselves as all lowercase in the mu-plugin
+    # NOTE: next line requires sub-directory (see note at top)
+    RewriteCond %{QUERY_STRING} !loginorigin=site-login
+
+    # If this `wp-login.php` request does not failed 
+    # any of the above criteria,
+    # return a 404 page.
+    RewriteRule . / [R=404,L]
+
+</IfModule>
+###########################################################
+# END Brute Force Login Prevention
+###########################################################
+
+# If things made it this far, we're good to continue processing the
+# request as normal using PHP. If you have a configuration for handling
+# PHP requests, be sure to replace this with your normal config.
